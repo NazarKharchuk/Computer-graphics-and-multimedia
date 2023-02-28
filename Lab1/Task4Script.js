@@ -23,11 +23,12 @@ window.onload = function () {
   var vertexShaderSource = `
         attribute vec3 aVertexPosition;
         attribute vec3 aVertexColor;
-        uniform mat4 modelMatrix;
+        uniform float uTime;
         varying vec3 vColor;
         void main() {
-            gl_Position = modelMatrix * vec4(aVertexPosition, 1.0);
-            vColor = aVertexColor;
+          gl_Position = vec4(aVertexPosition, 1.0);
+          gl_Position.y += sin(uTime * 2.0) * 0.5; // змінюємо положення вершини по y в залежності від часу
+          vColor = aVertexColor;
         }
     `;
 
@@ -99,7 +100,7 @@ window.onload = function () {
     0.0, // кольори
 
     // вершина 2
-    -0.5,
+    0.0,
     0.5,
     0.0, // координати
     0.0,
@@ -108,15 +109,15 @@ window.onload = function () {
 
     // вершина 3
     0.5,
-    0.5,
+    -0.5,
     0.0, // координати
     0.0,
     0.0,
     1.0, // кольори
 
     // вершина 4
-    0.5,
-    -0.5,
+    0.0,
+    0.0,
     0.0, // координати
     0.0,
     0.0,
@@ -164,25 +165,24 @@ window.onload = function () {
     3 * Float32Array.BYTES_PER_ELEMENT
   );
 
-  // створення матриці моделі та передача в шейдер
-  var modelMatrix = mat4.create();
+  // Отримати місце розташування uniform змінної в програмі шейдерів
+  const timeUniformLocation = gl.getUniformLocation(program, "uTime");
+
+  // Задати початкове значення часу
+  let time = 0;
 
   function drawScene() {
-    // створення матриці обертання навколо центру
-    var rotationMatrix = mat4.create();
-    mat4.rotateZ(rotationMatrix, rotationMatrix, 0.01);
-
-    // обертання квадрата
-    mat4.multiply(modelMatrix, modelMatrix, rotationMatrix);
-
-    // передача матриці моделі в шейдер
-    var modelMatrixLocation = gl.getUniformLocation(program, "modelMatrix");
-    gl.uniformMatrix4fv(modelMatrixLocation, false, modelMatrix);
+    // Задати значення uniform змінної
+    gl.uniform1f(timeUniformLocation, time);
 
     // очистка екрану та відображення квадрата
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+    //gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+
+    // Оновити час
+    time += 0.01;
 
     // запуск функції для рендерингу анімації
     requestAnimationFrame(drawScene);
