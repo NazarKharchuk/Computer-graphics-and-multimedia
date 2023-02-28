@@ -14,7 +14,7 @@ window.onload = function () {
   gl.viewport(0, 0, canvas.width, canvas.height);
 
   // встановлення кольору екрану
-  gl.clearColor(1.0, 1.0, 1.0, 1.0);
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
   // очищення екрану
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -180,7 +180,7 @@ window.onload = function () {
     gl.uniformMatrix4fv(modelMatrixLocation, false, modelMatrix);
 
     // очистка екрану та відображення квадрата
-    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
 
