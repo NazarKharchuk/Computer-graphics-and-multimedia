@@ -117,8 +117,21 @@ window.onload = function () {
   // змінна, що буде зберігати координати та кольори точок
   let points = [];
 
-  // змінна, що буде зберігати колір наступної точки
-  let pointColor = [0.0, 0.0, 0.0];
+  // змінна, що буде зберігати індекси точок
+  let pointIndexes = [];
+
+  // змінна, що буде зберігати індекси координат вершин трикутників
+  let triangleIndexes = [];
+
+  // змінна, що буде зберігати значення режиму
+  let isPoints = true;
+
+  // змінна, що буде зберігати кількість точок нового трикутника
+  let countTrianglePoints = 0;
+
+  // створення буферів індексів
+  let pointIndexBuffer = gl.createBuffer();
+  let triangleIndexBuffer = gl.createBuffer();
 
   // функція, що створює точку на місці курсора
   function createPoint(event) {
@@ -131,61 +144,69 @@ window.onload = function () {
       (x / canvas.width) * 2 - 1,
       1 - (y / canvas.height) * 2,
       0.0,
-      pointColor[0],
-      pointColor[1],
-      pointColor[2]
+      Math.random(),
+      Math.random(),
+      Math.random()
     );
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
 
-    // очищення екрану
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    // перевірка умов і додавання індексів
+    if (isPoints) {
+      pointIndexes.push(points.length / 6 - 1);
+    } else {
+      if (countTrianglePoints != 2) {
+        pointIndexes.push(points.length / 6 - 1);
+        countTrianglePoints++;
+      } else {
+        triangleIndexes.push(pointIndexes.pop());
+        triangleIndexes.push(pointIndexes.pop());
+        triangleIndexes.push(points.length / 6 - 1);
+        countTrianglePoints = 0;
+      }
+    }
+
+    // заповнення буфера індексів вершин трикутників
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleIndexBuffer);
+
+    gl.bufferData(
+      gl.ELEMENT_ARRAY_BUFFER,
+      new Uint16Array(triangleIndexes),
+      gl.STATIC_DRAW
+    );
+
+    // малюємо трикутники
+    gl.drawElements(gl.TRIANGLES, triangleIndexes.length, gl.UNSIGNED_SHORT, 0);
+
+    // заповнення буфера індексів точок
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pointIndexBuffer);
+
+    gl.bufferData(
+      gl.ELEMENT_ARRAY_BUFFER,
+      new Uint16Array(pointIndexes),
+      gl.STATIC_DRAW
+    );
 
     // малюємо точки
-    gl.drawArrays(gl.POINTS, 0, points.length / 6);
+    gl.drawElements(gl.POINTS, pointIndexes.length, gl.UNSIGNED_SHORT, 0);
   }
 
   // додаємо обробник подій на натискання миші
   canvas.addEventListener("mousedown", createPoint);
 
-  // конвертація кольорів
-  function hexToRgb(hex) {
-    var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    hex = hex.replace(shorthandRegex, function (m, r, g, b) {
-      return r + r + g + g + b + b;
+  // обробник написку кнопки "Режим точок"
+  document.getElementById("point-mode-button").addEventListener("click", () => {
+    isPoints = true;
+    document.getElementById("point-mode-button").disabled = true;
+    document.getElementById("triangle-mode-button").disabled = false;
+  });
+
+  // обробник написку кнопки "Режим трикутників"
+  document
+    .getElementById("triangle-mode-button")
+    .addEventListener("click", () => {
+      isPoints = false;
+      countTrianglePoints = 0;
+      document.getElementById("triangle-mode-button").disabled = true;
+      document.getElementById("point-mode-button").disabled = false;
     });
-    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : null;
-  }
-
-  // зміна кольору очищення канвасу
-  const canvasColorButton = document.getElementById("canvas-color-button");
-  canvasColorButton.addEventListener("click", function () {
-    // отримати колір
-    let res = hexToRgb(document.getElementById("canvas-color").value)
-
-    // встановлення кольору екрану
-    gl.clearColor(res.r / 255, res.g / 255 , res.b / 255, 1.0);
-
-    // очищення екрану
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    // очистити масив точок
-    points = [];
-  });
-
-  // зміна кольору точок
-  const pointColorButton = document.getElementById("point-color-button");
-  pointColorButton.addEventListener("click", function () {
-    // отримати колір
-    let res = hexToRgb(document.getElementById("point-color").value)
-
-    // встановлення кольору точок
-    pointColor = [res.r / 255, res.g / 255 , res.b / 255];
-  });
 };
