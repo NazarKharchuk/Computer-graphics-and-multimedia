@@ -198,10 +198,8 @@ window.onload = function () {
       gl.STATIC_DRAW
     );
 
-    console.log(circleIndexes)
     // малюємо кола
     for(let i = 0; i < circleIndexes.length / (countCirclePoints + 2); i++){
-      console.log("i = " + i);
       gl.drawElements(gl.TRIANGLE_FAN, countCirclePoints + 2, gl.UNSIGNED_SHORT, i * (countCirclePoints + 2) * 2);
     }
 
