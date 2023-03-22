@@ -22,7 +22,7 @@ window.onload = function () {
   // створення вершинного шейдера
   var vertexShaderSource = `
         attribute vec3 aVertexPosition;
-        attribute vec3 aVertexColor;
+        uniform vec3 aVertexColor;
         uniform mat4 modelMatrix;
         varying vec3 vColor;
         void main() {
@@ -90,93 +90,29 @@ window.onload = function () {
 
   // встановлення значень вершин та їх кольорів
   var vertices = [
+    // вершина 0
+    -0.6, 0.6, 0.0,
+
     // вершина 1
-    -0.3,
-    0.3,
-    0.0, // координати
-    1.0,
-    0.0,
-    0.0, // кольори
+    -0.3, 0.6, 0.0,
 
     // вершина 2
-    -0.1,
-    0.3,
-    0.0, // координати
-    1.0,
-    0.0,
-    0.0, // кольори
+    0.3, 0.6, 0.0,
 
     // вершина 3
-    0.1,
-    0.3,
-    0.0, // координати
-    1.0,
-    0.0,
-    0.0, // кольори
+    0.6, 0.6, 0.0,
 
     // вершина 4
-    0.3,
-    0.3,
-    0.0, // координати
-    1.0,
-    0.0,
-    0.0, // кольори
+    -0.6, -0.6, 0.0,
 
     // вершина 5
-    -0.1,
-    0.1,
-    0.0, // координати
-    1.0,
-    0.0,
-    0.0, // кольори
+    -0.3, -0.6, 0.0,
 
     // вершина 6
-    -0.1,
-    -0.1,
-    0.0, // координати
-    1.0,
-    0.0,
-    0.0, // кольори
+    0.3, -0.6, 0.0,
 
     // вершина 7
-    -0.3,
-    -0.3,
-    0.0, // координати
-    1.0,
-    0.0,
-    0.0, // кольори
-
-    // вершина 8
-    -0.1,
-    -0.3,
-    0.0, // координати
-    1.0,
-    0.0,
-    0.0, // кольори
-
-    // вершина 9
-    0.1,
-    -0.3,
-    0.0, // координати
-    1.0,
-    0.0,
-    0.0, // кольори
-
-    // вершина 10
-    0.3,
-    -0.3,
-    0.0, // координати
-    1.0,
-    0.0,
-    0.0, // кольори
-
-        // вершина 11
-    0.1,
-    -0.1,
-    0.0, // координати
-    1.0,
-    0.0,
-    0.0, // кольори
+    0.6, -0.6, 0.0,
   ];
 
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -186,9 +122,7 @@ window.onload = function () {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
   // індекси вершин для створення граней літер
-  var indicesN = [0, 1, 6, 1, 6, 7, 1, 10, 4, 4, 10, 8, 2, 3, 8, 3, 8, 9];
-  var indicesK = [0, 1, 6, 1, 6, 7, 4, 2, 3, 4, 3, 5, 4, 9, 8, 4, 8, 5];
-  var indices = indicesK;
+  var indices = [0, 1, 6, 1, 6, 7, 2, 3, 4, 3, 4, 5];
 
   gl.bufferData(
     gl.ELEMENT_ARRAY_BUFFER,
@@ -196,31 +130,13 @@ window.onload = function () {
     gl.STATIC_DRAW
   );
 
-  // кількість елементів в кожному рядку вершин
-  var vertexSize = 3 + 3; // 3 координати та 3 кольори
-
   // встановлення покажчиків на атрибути
   var positionPointer = gl.getAttribLocation(program, "aVertexPosition");
   gl.enableVertexAttribArray(positionPointer);
-  gl.vertexAttribPointer(
-    positionPointer,
-    3,
-    gl.FLOAT,
-    false,
-    vertexSize * Float32Array.BYTES_PER_ELEMENT,
-    0
-  );
+  gl.vertexAttribPointer(positionPointer, 3, gl.FLOAT, false, 0, 0);
 
-  var colorPointer = gl.getAttribLocation(program, "aVertexColor");
-  gl.enableVertexAttribArray(colorPointer);
-  gl.vertexAttribPointer(
-    colorPointer,
-    3,
-    gl.FLOAT,
-    false,
-    vertexSize * Float32Array.BYTES_PER_ELEMENT,
-    3 * Float32Array.BYTES_PER_ELEMENT
-  );
+  var colorLocation = gl.getUniformLocation(program, "aVertexColor");
+  gl.uniform3f(colorLocation, 1.0, 1.0, 1.0);
 
   // створення матриці моделі та передача в шейдер
   var modelMatrix = mat4.create();
@@ -249,29 +165,29 @@ window.onload = function () {
   // запуск функції для рендерингу анімації
   requestAnimationFrame(drawScene);
 
-  // обробник написку кнопки "K"
-  document.getElementById("K-button").addEventListener("click", () => {
-    var indices = indicesK;
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(
-      gl.ELEMENT_ARRAY_BUFFER,
-      new Uint16Array(indices),
-      gl.STATIC_DRAW
-    );
-    document.getElementById("K-button").disabled = true;
-    document.getElementById("N-button").disabled = false;
-  });
+  // конвертація кольорів
+  function hexToRgb(hex) {
+    var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+      return r + r + g + g + b + b;
+    });
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : null;
+  }
 
-  // обробник написку кнопки "N"
-  document.getElementById("N-button").addEventListener("click", () => {
-    var indices = indicesN;
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(
-      gl.ELEMENT_ARRAY_BUFFER,
-      new Uint16Array(indices),
-      gl.STATIC_DRAW
-    );
-    document.getElementById("N-button").disabled = true;
-    document.getElementById("K-button").disabled = false;
+  // зміна кольору літери
+  const canvasColorButton = document.getElementById("color-button");
+  canvasColorButton.addEventListener("click", function () {
+    // отримати колір
+    let res = hexToRgb(document.getElementById("color").value);
+
+    // зміна кольору літери
+    gl.uniform3f(colorLocation, res.r / 255, res.g / 255, res.b / 255);
   });
 };
