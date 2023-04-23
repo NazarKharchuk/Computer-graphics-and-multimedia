@@ -25,14 +25,17 @@ window.onload = function () {
   // створення вершинного шейдера
   var vertexShaderSource = `
         attribute vec3 aVertexPosition;
-        attribute vec3 aVertexColor;
+        attribute vec2 aTexCoord;
+        attribute vec3 aNormal;
         uniform mat4 modelMatrix;
         uniform mat4 projectionMatrix;
         uniform mat4 viewMatrix;
-        varying vec3 vColor;
+        varying vec2 vTexCoord;
+        varying vec3 vNormal;
         void main() {
+          vTexCoord = aTexCoord;
+          vNormal = (modelMatrix * vec4(aNormal, 0.0)).xyz;
             gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(aVertexPosition, 1.0);
-            vColor = aVertexColor;
         }
     `;
 
@@ -52,9 +55,20 @@ window.onload = function () {
   // створення фрагментного шейдера
   var fragmentShaderSource = `
         precision mediump float;
-        varying vec3 vColor;
+        varying vec2 vTexCoord;
+        varying vec3 vNormal;
+        uniform sampler2D sampler;
         void main() {
-            gl_FragColor = vec4(vColor, 1.0);
+          vec3 am = vec3(2.0, 2.0, 0.2);
+          vec3 sy = vec3(2.0, 1.6, 1.4);
+          vec3 sn = vec3(1.0, -4.0, 1.0);
+
+          vec4 texel = texture2D(sampler, vTexCoord);
+
+          vec3 li = am + sy * max(dot(vNormal, sn), 0.0);
+
+          gl_FragColor = vec4(texel.rgb * li, texel.a);
+          //gl_FragColor = texture2D(sampler, vTexCoord);
         }
     `;
 
@@ -86,33 +100,143 @@ window.onload = function () {
     return;
   }
 
-  // використання програми шейдерів
-  gl.useProgram(program);
-
   // створення буфера вершин
   var vertexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 
-  // встановлення значень вершин трикутника та їх кольорів
+  // встановлення значень вершин
   var vertices = [
-    //top
-    -1.0, 1.0, -1.0, 0.5, 0.5, 0.5, -1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 1.0, 1.0,
-    1.0, 0.5, 0.5, 0.5, 1.0, 1.0, -1.0, 0.5, 0.5, 0.5,
-    //left
-    -1.0, 1.0, 1.0, 0.75, 0.25, 0.5, -1.0, -1.0, 1.0, 0.75, 0.25, 0.5, -1.0,
-    -1.0, -1.0, 0.75, 0.25, 0.5, -1.0, 1.0, -1.0, 0.75, 0.25, 0.5,
-    //right
-    1.0, 1.0, 1.0, 0.25, 0.25, 0.75, 1.0, -1.0, 1.0, 0.25, 0.25, 0.75, 1.0,
-    -1.0, -1.0, 0.25, 0.25, 0.75, 1.0, 1.0, -1.0, 0.25, 0.25, 0.75,
-    //front
-    1.0, 1.0, 1.0, 1.0, 0.0, 0.15, 1.0, -1.0, 1.0, 1.0, 0.0, 0.15, -1.0, -1.0,
-    1.0, 1.0, 0.0, 0.15, -1.0, 1.0, 1.0, 1.0, 0.0, 0.15,
-    //back
-    1.0, 1.0, -1.0, 0.0, 1.0, 0.15, 1.0, -1.0, -1.0, 0.0, 1.0, 0.15, -1.0, -1.0,
-    -1.0, 0.0, 1.0, 0.15, -1.0, 1.0, -1.0, 0.0, 1.0, 0.15,
-    //bottom
-    -1.0, -1.0, -1.0, 0.5, 0.5, 1.0, -1.0, -1.0, 1.0, 0.5, 0.5, 1.0, 1.0, -1.0,
-    1.0, 0.5, 0.5, 1.0, 1.0, -1.0, -1.0, 0.5, 0.5, 1.0,
+    // Top
+    -1.0,
+    1.0,
+    -1.0,
+    0,
+    0, //
+    -1.0,
+    1.0,
+    1.0,
+    0,
+    1, //
+    1.0,
+    1.0,
+    1.0,
+    1,
+    1, //
+    1.0,
+    1.0,
+    -1.0,
+    1,
+    0, //
+
+    // Left
+    -1.0,
+    1.0,
+    1.0,
+    0,
+    0, //
+    -1.0,
+    -1.0,
+    1.0,
+    1,
+    0, //
+    -1.0,
+    -1.0,
+    -1.0,
+    1,
+    1, //
+    -1.0,
+    1.0,
+    -1.0,
+    0,
+    1, //
+
+    // Right
+    1.0,
+    1.0,
+    1.0,
+    1,
+    1, //
+    1.0,
+    -1.0,
+    1.0,
+    0,
+    1, //
+    1.0,
+    -1.0,
+    -1.0,
+    0,
+    0, //
+    1.0,
+    1.0,
+    -1.0,
+    1,
+    0, //
+
+    // Front
+    1.0,
+    1.0,
+    1.0,
+    1,
+    1, //
+    1.0,
+    -1.0,
+    1.0,
+    1,
+    0, //
+    -1.0,
+    -1.0,
+    1.0,
+    0,
+    0, //
+    -1.0,
+    1.0,
+    1.0,
+    0,
+    1, //
+
+    // Back
+    1.0,
+    1.0,
+    -1.0,
+    0,
+    0, //
+    1.0,
+    -1.0,
+    -1.0,
+    0,
+    1, //
+    -1.0,
+    -1.0,
+    -1.0,
+    1,
+    1, //
+    -1.0,
+    1.0,
+    -1.0,
+    1,
+    0, //
+
+    // Bottom
+    -1.0,
+    -1.0,
+    -1.0,
+    1,
+    1, //
+    -1.0,
+    -1.0,
+    1.0,
+    1,
+    0, //
+    1.0,
+    -1.0,
+    1.0,
+    0,
+    0, //
+    1.0,
+    -1.0,
+    -1.0,
+    0,
+    1, //
   ];
 
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -123,17 +247,22 @@ window.onload = function () {
 
   // індекси вершин для створення граней квадрата
   var indices = [
-    //top
+    // Top
     0, 1, 2, 0, 2, 3,
-    //left
+
+    // Left
     5, 4, 6, 6, 4, 7,
-    // right
+
+    // Right
     8, 9, 10, 8, 10, 11,
-    //front
+
+    // Front
     13, 12, 14, 15, 14, 12,
-    //back
+
+    // Back
     16, 17, 18, 16, 18, 19,
-    //bottom
+
+    // Bottom
     21, 20, 22, 22, 20, 23,
   ];
 
@@ -143,28 +272,86 @@ window.onload = function () {
     gl.STATIC_DRAW
   );
 
+  // створення буфера normals
+  var normalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+
+  // встановлення значень вершин трикутника та їх кольорів
+  var normals = [
+    // Top
+    0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
+
+    // Left
+    -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0,
+
+    // Right
+    1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+
+    // Front
+    0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
+
+    // Back
+    0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0,
+
+    // Bottom
+    0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0,
+  ];
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+
   // встановлення покажчиків на атрибути
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
   var positionPointer = gl.getAttribLocation(program, "aVertexPosition");
   gl.vertexAttribPointer(
     positionPointer,
     3,
     gl.FLOAT,
     gl.FALSE,
-    6 * Float32Array.BYTES_PER_ELEMENT,
+    5 * Float32Array.BYTES_PER_ELEMENT,
     0
   );
   gl.enableVertexAttribArray(positionPointer);
 
-  var colorPointer = gl.getAttribLocation(program, "aVertexColor");
+  var TexCoordPointer = gl.getAttribLocation(program, "aTexCoord");
   gl.vertexAttribPointer(
-    colorPointer,
+    TexCoordPointer,
+    2,
+    gl.FLOAT,
+    gl.FALSE,
+    5 * Float32Array.BYTES_PER_ELEMENT,
+    3 * Float32Array.BYTES_PER_ELEMENT
+  );
+  gl.enableVertexAttribArray(TexCoordPointer);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  var normalPointer = gl.getAttribLocation(program, "aNormal");
+  gl.vertexAttribPointer(
+    normalPointer,
     3,
     gl.FLOAT,
     gl.FALSE,
-    6 * Float32Array.BYTES_PER_ELEMENT,
-    3 * Float32Array.BYTES_PER_ELEMENT
+    0,
+    0
   );
-  gl.enableVertexAttribArray(colorPointer);
+  gl.enableVertexAttribArray(normalPointer);
+
+  // створення текстури
+  var texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA,
+    1,
+    1,
+    0,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    new Uint8Array([0, 0, 255, 255])
+  );
+
+  // використання програми шейдерів
+  gl.useProgram(program);
 
   // отримання локаторів змінних
   var modelMatrixLocation = gl.getUniformLocation(program, "modelMatrix");
@@ -200,6 +387,7 @@ window.onload = function () {
     // очистка екрану та відображення квадрата
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
+
     gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
 
     // запуск функції для рендерингу анімації
@@ -208,16 +396,4 @@ window.onload = function () {
 
   // запуск функції для рендерингу анімації
   requestAnimationFrame(drawScene);
-
-  // обробник написку  Orthogonal
-  document.getElementById("ortho").addEventListener("change", () => {
-    mat4.ortho(projectionMatrix, -3, 3, -3, 3, 2, 10);
-    gl.uniformMatrix4fv(projectionMatrixLocation, gl.FALSE, projectionMatrix);
-  });
-
-  // обробник написку  Perspective
-  document.getElementById("persp").addEventListener("change", () => {
-    mat4.perspective(projectionMatrix, Math.PI / 4, 1, 2, 10);
-    gl.uniformMatrix4fv(projectionMatrixLocation, gl.FALSE, projectionMatrix);
-  });
 };

@@ -283,10 +283,10 @@ window.onload = function () {
   );
   gl.enableVertexAttribArray(TexCoordPointer);
 
-  // Create a texture.
+  // створення текстури
   var texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  // Asynchronously load an image
+  // Асинхронне завантаження зображення для текстури
   var image1 = new Image();
   image1.crossOrigin = "anonymous";
   image1.src = "texture.png";
@@ -336,9 +336,6 @@ window.onload = function () {
     // очистка екрану та відображення квадрата
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
-
-    /*gl.bindTexture(gl.TEXTURE_2D, boxTexture);
-    gl.activeTexture(gl.TEXTURE0);*/
 
     gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
 
