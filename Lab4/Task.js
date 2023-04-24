@@ -25,16 +25,19 @@ window.onload = function () {
   // створення вершинного шейдера
   var vertexShaderSource = `
         attribute vec3 aVertexPosition;
-        attribute vec2 aTexCoord;
         attribute vec3 aNormal;
         uniform mat4 modelMatrix;
         uniform mat4 projectionMatrix;
         uniform mat4 viewMatrix;
-        varying vec2 vTexCoord;
-        varying vec3 vNormal;
+        varying vec3 v_position;
+        varying vec3 v_normal;
         void main() {
-          vTexCoord = aTexCoord;
-          vNormal = (modelMatrix * vec4(aNormal, 0.0)).xyz;
+            vec4 pos = vec4(aVertexPosition, 1.0);
+            vec4 normal = vec4(aNormal, 0.0);
+
+            v_position = (viewMatrix * modelMatrix * pos).xyz;
+            v_normal = normalize((viewMatrix * modelMatrix * normal).xyz);
+
             gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(aVertexPosition, 1.0);
         }
     `;
@@ -55,20 +58,35 @@ window.onload = function () {
   // створення фрагментного шейдера
   var fragmentShaderSource = `
         precision mediump float;
-        varying vec2 vTexCoord;
-        varying vec3 vNormal;
-        uniform sampler2D sampler;
+        varying vec3 v_position;
+        varying vec3 v_normal;
+
         void main() {
-          vec3 am = vec3(2.0, 2.0, 0.2);
-          vec3 sy = vec3(2.0, 1.6, 1.4);
-          vec3 sn = vec3(1.0, -4.0, 1.0);
+          vec3 u_light_position = vec3(5.0, 5.0, 0.0);  // розташування джерела світла
+          vec3 u_ambient_color = vec3(0.0, 0.0, 1.0);   // ambient навколишній колір сцени
+          vec3 u_diffuse_color = vec3(0.0, 1.0, 0.0);   // diffuse дифузний колір поверхні
+          vec3 u_specular_color = vec3(1.0, 0.0, 0.0);  // specular дзеркальний колір поверхні
+          float u_shininess = 10.0;      // shininess блиск поверхні
 
-          vec4 texel = texture2D(sampler, vTexCoord);
-
-          vec3 li = am + sy * max(dot(vNormal, sn), 0.0);
-
-          gl_FragColor = vec4(texel.rgb * li, texel.a);
-          //gl_FragColor = texture2D(sampler, vTexCoord);
+          // Розрахувати вектори для розрахунків освітлення
+          vec3 L = normalize(u_light_position - v_position);
+          vec3 N = normalize(v_normal);
+          vec3 V = normalize(-v_position);
+        
+          // Розрахувати дифузну складову
+          float diffuse = max(dot(N, L), 0.0);
+          vec3 diffuse_color = u_diffuse_color * diffuse;
+        
+          // Розрахувати дзеркальний компонент
+          vec3 R = reflect(-L, N);
+          float specular = pow(max(dot(R, V), 0.0), u_shininess);
+          vec3 specular_color = u_specular_color * specular;
+        
+          // Розрахувати кінцевий колір
+          vec3 ambient_color = u_ambient_color;
+          vec3 color = ambient_color + diffuse_color + specular_color;
+        
+          gl_FragColor = vec4(color, 1.0);
         }
     `;
 
@@ -107,136 +125,22 @@ window.onload = function () {
   // встановлення значень вершин
   var vertices = [
     // Top
-    -1.0,
-    1.0,
-    -1.0,
-    0,
-    0, //
-    -1.0,
-    1.0,
-    1.0,
-    0,
-    1, //
-    1.0,
-    1.0,
-    1.0,
-    1,
-    1, //
-    1.0,
-    1.0,
-    -1.0,
-    1,
-    0, //
+    -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0,
 
     // Left
-    -1.0,
-    1.0,
-    1.0,
-    0,
-    0, //
-    -1.0,
-    -1.0,
-    1.0,
-    1,
-    0, //
-    -1.0,
-    -1.0,
-    -1.0,
-    1,
-    1, //
-    -1.0,
-    1.0,
-    -1.0,
-    0,
-    1, //
+    -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0,
 
     // Right
-    1.0,
-    1.0,
-    1.0,
-    1,
-    1, //
-    1.0,
-    -1.0,
-    1.0,
-    0,
-    1, //
-    1.0,
-    -1.0,
-    -1.0,
-    0,
-    0, //
-    1.0,
-    1.0,
-    -1.0,
-    1,
-    0, //
+    1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0,
 
     // Front
-    1.0,
-    1.0,
-    1.0,
-    1,
-    1, //
-    1.0,
-    -1.0,
-    1.0,
-    1,
-    0, //
-    -1.0,
-    -1.0,
-    1.0,
-    0,
-    0, //
-    -1.0,
-    1.0,
-    1.0,
-    0,
-    1, //
+    1.0, 1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0,
 
     // Back
-    1.0,
-    1.0,
-    -1.0,
-    0,
-    0, //
-    1.0,
-    -1.0,
-    -1.0,
-    0,
-    1, //
-    -1.0,
-    -1.0,
-    -1.0,
-    1,
-    1, //
-    -1.0,
-    1.0,
-    -1.0,
-    1,
-    0, //
+    1.0, 1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0,
 
     // Bottom
-    -1.0,
-    -1.0,
-    -1.0,
-    1,
-    1, //
-    -1.0,
-    -1.0,
-    1.0,
-    1,
-    0, //
-    1.0,
-    -1.0,
-    1.0,
-    0,
-    0, //
-    1.0,
-    -1.0,
-    -1.0,
-    0,
-    1, //
+    -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0,
   ];
 
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -302,53 +206,13 @@ window.onload = function () {
   // встановлення покажчиків на атрибути
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
   var positionPointer = gl.getAttribLocation(program, "aVertexPosition");
-  gl.vertexAttribPointer(
-    positionPointer,
-    3,
-    gl.FLOAT,
-    gl.FALSE,
-    5 * Float32Array.BYTES_PER_ELEMENT,
-    0
-  );
+  gl.vertexAttribPointer(positionPointer, 3, gl.FLOAT, gl.FALSE, 0, 0);
   gl.enableVertexAttribArray(positionPointer);
-
-  var TexCoordPointer = gl.getAttribLocation(program, "aTexCoord");
-  gl.vertexAttribPointer(
-    TexCoordPointer,
-    2,
-    gl.FLOAT,
-    gl.FALSE,
-    5 * Float32Array.BYTES_PER_ELEMENT,
-    3 * Float32Array.BYTES_PER_ELEMENT
-  );
-  gl.enableVertexAttribArray(TexCoordPointer);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
   var normalPointer = gl.getAttribLocation(program, "aNormal");
-  gl.vertexAttribPointer(
-    normalPointer,
-    3,
-    gl.FLOAT,
-    gl.FALSE,
-    0,
-    0
-  );
+  gl.vertexAttribPointer(normalPointer, 3, gl.FLOAT, gl.FALSE, 0, 0);
   gl.enableVertexAttribArray(normalPointer);
-
-  // створення текстури
-  var texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    0,
-    gl.RGBA,
-    1,
-    1,
-    0,
-    gl.RGBA,
-    gl.UNSIGNED_BYTE,
-    new Uint8Array([0, 0, 255, 255])
-  );
 
   // використання програми шейдерів
   gl.useProgram(program);
@@ -366,7 +230,7 @@ window.onload = function () {
   mat4.identity(modelMatrix);
 
   var projectionMatrix = mat4.create();
-  mat4.ortho(projectionMatrix, -3, 3, -3, 3, 2, 10);
+  mat4.perspective(projectionMatrix, Math.PI / 4, 1, 2, 10);
 
   var viewMatrix = mat4.create();
   mat4.lookAt(viewMatrix, [0, 0, -8], [0, 0, 0], [0, 1, 0]);
