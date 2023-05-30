@@ -62,7 +62,7 @@ window.onload = function () {
         varying vec3 v_normal;
 
         void main() {
-          vec3 u_light_position = vec3(5.0, 5.0, 0.0);  // розташування джерела світла
+          vec3 u_light_position = vec3(5.0, 3.0, 0.0);  // розташування джерела світла
           vec3 u_ambient_color = vec3(0.0, 0.0, 1.0);   // ambient навколишній колір сцени
           vec3 u_diffuse_color = vec3(0.0, 1.0, 0.0);   // diffuse дифузний колір поверхні
           vec3 u_specular_color = vec3(1.0, 0.0, 0.0);  // specular дзеркальний колір поверхні
